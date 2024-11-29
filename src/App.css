@@ -1,0 +1,6 @@
+.frozen-row {
+    position: sticky;
+    top: 0;
+    z-index: 1; /* Ensures it stays above other rows */
+    background: #f5f5f5; /* Optional: Add background color for better visibility */
+}
