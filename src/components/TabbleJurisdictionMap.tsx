@@ -4,7 +4,7 @@ import { Checkbox, Form, Input, Select, Table, Tag, Button, Dropdown, Space, Men
 import { excelToJson } from '../utils/excelToJson';
 import { DownOutlined } from "@ant-design/icons";
 import { usejurisdictionStore } from '../store/store';
-
+import { ColumnType } from "antd/es/table";
 
 
 type FormInstance<T> = GetRef<typeof Form<T>>;
@@ -122,9 +122,12 @@ const EditableCell: React.FC<React.PropsWithChildren<EditableCellProps>> = ({
 
 
 export interface Item {
-
+    [key: string]: any;
     key?: number;
-    Jurisdiction?: string;
+    "Jurisdiction"?: string;
+    Authority?: string
+
+
     'Jurisdiction types'?: string;
     Country?: string;
     Series?: string;
@@ -152,6 +155,60 @@ export interface Item {
     MCL_text?: string
 }
 
+interface CheckListOption {
+    //[key: string]: string[] | undefined;
+    options?: { name: string, key: string }[];
+    checkOption?: string
+}
+
+interface MappingOption {
+    [key: string]: CheckListOption | undefined;
+    //  [key: string]: string[] | undefined;
+    Jurisdiction: CheckListOption
+    'Jurisdiction types'?: CheckListOption
+}
+
+const expectedHeaderNames =
+{
+    "Jurisdiction": {
+        options: [
+            { name: "Jurisdiction", key: "Jurisdiction" },
+            { name: "Authority", key: "Authority" },
+            { name: "Control", key: "Control" },
+            { name: "Power", key: "Power" },
+            { name: "Administration", key: "Administration" }
+        ],
+        checkOption: "Jurisdiction"
+    },
+    "Jurisdiction types": {
+        options: [
+            { name: "Jurisdiction t1", key: "Jurisdiction t1" },
+            { name: "Jurisdiction t2", key: "Jurisdiction t2" },
+            { name: "Jurisdiction t3", key: "Jurisdiction t3" },
+            { name: "Jurisdiction t4", key: "Jurisdiction t4" },
+            { name: "Jurisdiction t5", key: "Jurisdiction t5" }
+        ],
+        checkOption: "Jurisdiction t1"
+    },
+    "Country": {
+        options: [
+            { name: "Country -1", key: "Country -1" },
+            { name: "Country -2", key: "Country -2" },
+            { name: "Country -3", key: "Country -3" },
+            { name: "Country -4", key: "Country -4" },
+            { name: "Country -5", key: "Country -5" }
+        ],
+        checkOption: "Country -1"
+    },
+    "Series": {
+        options: [
+            { name: "Series-1", key: "Series-1" },
+            { name: "Series-2", key: "Series-2" }
+        ],
+        checkOption: "Series-1"
+    }
+}
+
 
 
 
@@ -161,6 +218,15 @@ const Jurisdiction: React.FC<JurisdictionData> = ({ }) => {
     const [columns, setColumns] = useState<Column[]>([])
     const [dataSource, setDataSource] = useState<Item[]>([])
     const [filteredData, setFilteredData] = useState<Item[]>([]);
+    const [dropdownVisible, setDropdownVisible] = useState<Record<number, boolean>>({});
+    const [mappingOptions, setColumnMappings] = useState<MappingOption>(expectedHeaderNames);
+    const [currentHeaderDataIndex, setCurrentHeaderDataIndex] = useState<string>('')
+
+
+    useEffect(() => {
+        setFileColumn()
+
+    }, [mappingOptions])
 
     const setFileColumn = () => {
         if (!fileData.length) return;
@@ -175,7 +241,7 @@ const Jurisdiction: React.FC<JurisdictionData> = ({ }) => {
                 TempCol.push(
                     {
                         title: 'Action',
-                        dataIndex: 'Action',  // Make sure this is defined properly and matches the column's data index
+                        dataIndex: 'Action',
                         key: 'Action',
                         width: '10%',
 
@@ -199,29 +265,110 @@ const Jurisdiction: React.FC<JurisdictionData> = ({ }) => {
      * @returns {Column[]} - Array of column definitions.
      */
     const generateColumns = (row: any[]): Column[] => {
-        return row
-            .filter((item) => item !== "")
-            .map((item, index) => {
-                const title = Array.isArray(fileData[2]) ? fileData[2][index + 2] : "";
-                const category = Array.isArray(fileData[3]) ? fileData[3][index + 2] : "";
+        const filteredRow = row.filter((item) => item !== "")
+        return filteredRow.map((item, index) => {
+            const title = Array.isArray(fileData[2]) ? fileData[2][index + 2] : "";
+            const category = Array.isArray(fileData[3]) ? fileData[3][index + 2] : "";
+            let childrenC = []
+            if (title) {
 
-                if (title) {
-                    return {
-                        title,
-                        children: [
-                            {
-                                title: category,
-                                children: [
-                                    createColumn(item),
-                                ],
-                            },
-                        ],
-                    };
-                }
+                childrenC.push(createColumn(item))
+                childrenC.push(createColumn(filteredRow[index + 1]))
 
+            }
+
+
+            if (title) {
+                return {
+                    title,
+                    children: [
+
+                        //   ...childrenC
+                        {
+                            title: category,
+                            children: [
+
+                                ...childrenC,
+                            ],
+                        },
+                    ],
+                };
+            }
+
+            //if(item.)
+            if (item !== 'Caution Note') {
                 return createColumn(item);
-            });
+            }
+            return {}
+        });
     };
+
+    const mapFilterDataAsOption = (dataIndex: string, value: string) => {
+        setFilteredData((prev) =>
+            prev.map((item) => {
+                if (item.hasOwnProperty(dataIndex)) {
+                    const newItem = { ...item }; // Clone the object to avoid direct mutation
+                    (newItem as any)[value] = (item as any)[dataIndex]; // Assign new property
+                    delete (newItem as any)[dataIndex]; // Remove old property
+                    return newItem;
+                }
+                return item; // Return unchanged item if condition is not met
+            })
+        );
+    };
+
+
+    const handleColumnMapping = (dataIndex: string, value: string) => {
+        setColumnMappings((prev) => ({
+            ...prev,
+            [dataIndex]: {
+                ...prev[dataIndex],
+                checkOption: value,
+            },
+        }));
+        mapFilterDataAsOption(dataIndex, value)
+        // setCurrentHeaderDataIndex(dataIndex)
+    };
+
+
+    const setHeaderTitle = (dataIndex: string) => {
+
+        // const mappingOptions = dataSource.length > 0 ? Object.keys(dataSource[0]) : [];
+        const options = mappingOptions[dataIndex]?.options;
+        const checkedOption = mappingOptions[dataIndex]?.checkOption
+        return (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Select
+                    style={{ width: '100%' }}
+                    placeholder="Map column"
+                    value={dataIndex} // Replace 'exampleColumn' with your column key
+                    onChange={(value) => handleColumnMapping(dataIndex, value)} // Update column key accordingly
+
+                    dropdownRender={(menu) => (
+
+                        <div>
+                            {options?.map((option) => (
+                                <div key={option.key} style={{ padding: '8px 12px' }}>
+                                    <Checkbox
+                                        checked={mappingOptions[dataIndex]?.checkOption === option.key} // Update column key
+                                        onChange={(e) => {
+                                            if (e.target.checked) {
+                                                handleColumnMapping(dataIndex, option.key); // Update column key
+                                            }
+                                        }}
+                                    >
+                                        {option.name}
+                                    </Checkbox>
+                                </div>
+                            ))}
+                        </div>
+                    )
+                    }
+                />
+            </div>
+        );
+
+    }
 
     /**
      * Creates a single column definition.
@@ -232,25 +379,7 @@ const Jurisdiction: React.FC<JurisdictionData> = ({ }) => {
         dataIndex: dataIndex || "",
         width: "10%",
         editable: true,
-        title: (
-            <Space>
-                {dataIndex}
-                <Dropdown
-                    overlay={
-                        <Menu
-                            items={[
-                                { key: "1", label: "Sort Ascending" },
-                                { key: "2", label: "Sort Descending" },
-                            ]}
-                            onClick={(e) => console.log(`Header option clicked: ${e.key}`)}
-                        />
-                    }
-                    trigger={["click"]}
-                >
-                    <Button type="text" size="small" icon={<DownOutlined />} />
-                </Dropdown>
-            </Space>
-        ),
+        title: setHeaderTitle(dataIndex)
     });
 
     /**
@@ -341,6 +470,12 @@ const Jurisdiction: React.FC<JurisdictionData> = ({ }) => {
         },
     };
 
+    interface CustomColumnType<T> extends ColumnType<T> {
+        editable?: boolean;
+        children?: CustomColumnType<T>[]; // Ensure children is typed as an array
+    }
+    type CustomColumnsType<T> = Array<CustomColumnType<T>>;
+
     const enhancedColumns = columns.map((col, index) => ({
         ...col,
         children: col.children
@@ -417,6 +552,10 @@ const Jurisdiction: React.FC<JurisdictionData> = ({ }) => {
             : undefined,
 
         onCell: (record: Item) => {
+            const { dataIndex, editable } = col; // Destructure column properties
+            // if (dataIndex) {
+            //     col.title = setHeaderTitle(dataIndex);
+            // }
 
             const cellValue = record[col.dataIndex as keyof Item];
             const isPipeValue = typeof cellValue === "string" && cellValue.includes("|");
@@ -477,6 +616,73 @@ const Jurisdiction: React.FC<JurisdictionData> = ({ }) => {
                     : undefined,
     }));
 
+    // const enhanceColumn = (
+    //     col: CustomColumnType<Item>,
+    //     index: number
+    // ): CustomColumnType<Item> => ({
+    //     ...col,
+    //     title: col.children ? undefined : setHeaderTitle(col.dataIndex as string),
+    //     // Recursively process child columns
+    //     children: col.children?.map((child, childIndex) =>
+    //         enhanceColumn(child, childIndex)
+    //     ),
+    //     onCell: (record: Item) => {
+    //         const { dataIndex, editable } = col;
+    //         const cellValue = record[dataIndex as keyof Item];
+    //         const isPipeValue =
+    //             typeof cellValue === "string" && cellValue.includes("|");
+
+    //         return {
+    //             "data-record": JSON.stringify(record),
+    //             "data-editable": !isPipeValue && editable ? "true" : "false",
+    //             title: typeof col.title === "string" ? col.title : undefined,
+    //         };
+    //     },
+    //     render: (text: string, record: Item) => {
+    //         if (col.dataIndex === "Action") {
+    //             return (
+    //                 <Space size="middle">
+    //                     <Button
+    //                         onClick={() => handleDelete(record)}
+    //                         type="link"
+    //                         danger
+    //                     >
+    //                         Delete
+    //                     </Button>
+    //                 </Space>
+    //             );
+    //         }
+
+    //         if (typeof text === "string" && text.includes("|")) {
+    //             const options = text.split("|");
+    //             return (
+    //                 <Select
+    //                     style={{ width: "100%" }}
+    //                     placeholder="Select an option"
+    //                     defaultValue={options[0]}
+    //                 >
+    //                     {options.map((option, i) => (
+    //                         <Select.Option key={i} value={option}>
+    //                             {option}
+    //                         </Select.Option>
+    //                     ))}
+    //                 </Select>
+    //             );
+    //         }
+    //         return text;
+    //     },
+    //     fixed:
+    //         index === 38238
+    //             ? "left"
+    //             : col.dataIndex === "Action"
+    //             ? "right"
+    //             : undefined,
+    // });
+
+    // // Enhance all columns, including nested ones
+    // const enhancedColumns: CustomColumnsType<Item> = columns.map((col, index) =>
+    //     enhanceColumn(col as CustomColumnType<Item>, index)
+    // );
 
     return (
         <div style={{ height: 'calc(100vh - 120px)', display: 'flex', flexDirection: 'column' }}>
@@ -488,7 +694,7 @@ const Jurisdiction: React.FC<JurisdictionData> = ({ }) => {
                 bordered
                 dataSource={filteredData}
                 columns={enhancedColumns as ColumnTypes}
-                pagination={false} 
+                pagination={false}
                 scroll={{ y: 'calc(100vh - 250px)', x: 150 * 60 }}  // ,x: 150 * 60 
                 //sticky={{ offsetHeader: 0, offsetScroll: 0 }}
                 sticky
@@ -502,6 +708,8 @@ const Jurisdiction: React.FC<JurisdictionData> = ({ }) => {
             />
         </div>
     )
+
+
 
 }
 
