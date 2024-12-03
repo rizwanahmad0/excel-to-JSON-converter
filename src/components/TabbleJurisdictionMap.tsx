@@ -136,7 +136,7 @@ export interface Item {
     MCL_age?: string;
     'Caution Note'?: string;
     'MCL_exhc'?: string;
-    'MCL_exhctype'?: string;
+    'MCL_exhctype'?: [];
     'MCL_exhcage'?: string
     'MCL_exhcminage'?: string;
     MCL_exstd?: string;
@@ -435,6 +435,17 @@ const Jurisdiction: React.FC<JurisdictionData> = ({ }) => {
     };
 
 
+    const formatDate = (dateString: string): string => {
+        const dateParts = dateString.split('/');
+        const day = dateParts[0].padStart(2, '0');
+        const month = dateParts[1].padStart(2, '0');
+        const year = `20${dateParts[2]}`;
+
+        return `${day}/${month}/${year}`;
+    }
+
+   
+
 
     const convertExcelDateToJSDate = (excelDate: number): string => {
         const excelEpoch = new Date(1899, 11, 30);
@@ -695,6 +706,7 @@ const Jurisdiction: React.FC<JurisdictionData> = ({ }) => {
                 dataSource={filteredData}
                 columns={enhancedColumns as ColumnTypes}
                 pagination={false}
+                //virtual={true}
                 scroll={{ y: 'calc(100vh - 250px)', x: 150 * 60 }}  // ,x: 150 * 60 
                 //sticky={{ offsetHeader: 0, offsetScroll: 0 }}
                 sticky

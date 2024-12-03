@@ -4,6 +4,7 @@ import * as XLSX from "xlsx";
 
 
 
+
 export function excelToJson(file: File): Promise<Record<string, unknown[]>> {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -35,37 +36,6 @@ export function excelToJson(file: File): Promise<Record<string, unknown[]>> {
 }
 
 
-// interface JsonData {
-//     [key: string]: any; // Replace `any` with specific types based on your expected data structure
-//   }
+export function readJsonFile (){
 
-// export function xlsmToJson (f:any):  Promise<JSON|any> {
-//     return new Promise((resolve, reject) => {
-
-//    // const [jsonData, setJsonData] = useState<JsonData[]>([]);
-
-//     const file = f
-
-//     if (file) {
-//       const reader = new FileReader();
-
-//       reader.onload = (e: ProgressEvent<FileReader>) => {
-//         if (e.target?.result) {
-//           const data = new Uint8Array(e.target.result as ArrayBuffer);
-//           const workbook: XLSX.WorkBook = XLSX.read(data, { type: "array" });
-
-//           // Assuming the first sheet is the one we want
-//           const sheetName: string = workbook.SheetNames[0];
-//           const worksheet: XLSX.WorkSheet = workbook.Sheets[sheetName];
-
-//           // Convert the worksheet to JSON
-//           const json: JsonData[] = XLSX.utils.sheet_to_json(worksheet);
-//          // setJsonData(json);
-//           resolve(json)
-//         }
-//       };
-
-//       reader.readAsArrayBuffer(file);
-//     }
-// });
-// }
+}

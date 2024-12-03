@@ -4,6 +4,7 @@ import TableQuestionMap from './components/TableQuestionMap';
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Jurisdiction from './components/TabbleJurisdictionMap';
 import TestComponent from './components/TestComponent';
+import JurisdictionTableFromJson from './components/JurisdictionTableJsonFromJsonFile';
 
 
 const App: React.FC = () => {
@@ -47,6 +48,7 @@ const App: React.FC = () => {
                     <TableQuestionMap />
                 </div>} />
                 <Route path='/jurisdiction' element={<Jurisdiction/>}/>
+                <Route path='/json' element={<JurisdictionTableFromJson/>}/>
                 <Route path='/test' element={<TestComponent/>}/>
             </Routes>
         </Router>
